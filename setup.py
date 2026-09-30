@@ -1,6 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+"""Build script for PyBluez.
+
+Static project metadata lives in pyproject.toml; this file only contains the
+platform-dependent parts: the C extension modules, package layout, and the
+macOS-specific build steps for the LightAquaBlue framework.
+"""
 import os
-import platform
 import sys
 
 from setuptools import setup, Extension
@@ -9,15 +14,18 @@ from setuptools import setup, Extension
 # This marks the wheel as always being platform-specific and not pure Python
 # See: https://stackoverflow.com/q/45150304/145504
 try:
-    from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
+    from setuptools.command.bdist_wheel import bdist_wheel as _bdist_wheel
+except ImportError:
+    try:
+        from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
+    except ImportError:
+        _bdist_wheel = None
+
+if _bdist_wheel is not None:
     class impure_bdist_wheel(_bdist_wheel):
         def finalize_options(self):
             _bdist_wheel.finalize_options(self)
             self.root_is_pure = False
-except ImportError:
-    # If the wheel module isn't available, no problem -- we're not doing a
-    # bdist_wheel in that case anyway.
-    impure_bdist_wheel = None
 
 
 packages = ['bluetooth']
@@ -46,10 +54,7 @@ elif sys.platform.startswith("darwin"):
     package_dir['lightblue'] = 'macos'
     zip_safe = False
 
-    if sys.version_info >= (3,6):
-        install_requires += ['pyobjc-core>=6', 'pyobjc-framework-Cocoa>=6']
-    else:
-        install_requires += ['pyobjc-core>=3.1,<6', 'pyobjc-framework-Cocoa>=3.1,<6']
+    install_requires += ['pyobjc-core>=6', 'pyobjc-framework-Cocoa>=6']
 
     # FIXME: This is inelegant, how can we cover the cases?
     build_cmds = {'bdist', 'bdist_egg', 'bdist_wheel'}
@@ -81,37 +86,17 @@ else:
                     % sys.platform)
 
 
-setup(name='PyBluez',
-      version='0.30',
-      description='Bluetooth Python extension module',
-      author="Albert Huang",
-      author_email="ashuang@alum.mit.edu",
-      url="http://pybluez.github.io/",
-      ext_modules=ext_modules,
-      packages=packages,
-      python_requires=">=3.7",
-# for the python cheese shop
-      classifiers=['Development Status :: 4 - Beta',
-                   'License :: OSI Approved :: GNU General Public License (GPL)',
-                   'Programming Language :: Python',
-                   'Programming Language :: Python :: 3',
-                   'Programming Language :: Python :: 3.7',
-                   'Programming Language :: Python :: 3.8',
-                   'Programming Language :: Python :: 3.9',
-                   'Programming Language :: Python :: 3.10',
-                   'Programming Language :: Python :: 3 :: Only',
-                   'Topic :: Communications'],
-      download_url='https://github.com/pybluez/pybluez',
-      long_description='Bluetooth Python extension module to allow Python '\
-                'developers to use system Bluetooth resources. PyBluez works '\
-                'with GNU/Linux, macOS, and Windows.',
-      maintainer='Piotr Karulis',
-      license='GPL',
-      extras_require={'ble': ['gattlib']},
-      package_dir=package_dir,
-      install_requires=install_requires,
-      package_data=package_data,
-      eager_resources=eager_resources,
-      zip_safe=zip_safe,
-      cmdclass={'bdist_wheel': impure_bdist_wheel},
+setup_args = dict(
+    ext_modules=ext_modules,
+    packages=packages,
+    package_dir=package_dir,
+    install_requires=install_requires,
+    package_data=package_data,
+    eager_resources=eager_resources,
+    zip_safe=zip_safe,
 )
+
+if _bdist_wheel is not None:
+    setup_args['cmdclass'] = {'bdist_wheel': impure_bdist_wheel}
+
+setup(**setup_args)

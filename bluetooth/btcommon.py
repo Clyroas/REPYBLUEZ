@@ -1,4 +1,5 @@
 import sys
+import re
 import struct
 import binascii
 
@@ -179,6 +180,8 @@ IAC_LIAC = 0x9e8b00
 class BluetoothError (IOError):
     pass
 
+_BDADDR_RE = re.compile (r"[0-9A-Fa-f]{2}(?::[0-9A-Fa-f]{2}){5}")
+
 def is_valid_address (s):
     """returns True if address is a valid Bluetooth address.
 
@@ -187,13 +190,13 @@ def is_valid_address (s):
     01:23:45:67:89:AB is a valid address, but IN:VA:LI:DA:DD:RE is not.
 
     """
-    try:
-        pairs = s.split (":")
-        if len (pairs) != 6: return False
-        if not all(0 <= int(b, 16) <= 255 for b in pairs): return False
-    except:
-        return False
-    return True
+    return isinstance (s, str) and _BDADDR_RE.fullmatch (s) is not None
+
+_UUID_RE = re.compile (
+        r"(?:[0-9A-Fa-f]{4}"
+        r"|[0-9A-Fa-f]{8}"
+        r"|[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}"
+        r"-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})")
 
 def is_valid_uuid (uuid):
     """
@@ -208,28 +211,7 @@ def is_valid_uuid (uuid):
     where each X is a hexadecimal digit (case insensitive)
 
     """
-    try:
-        if len (uuid) == 4:
-            if int (uuid, 16) < 0: return False
-        elif len (uuid) == 8:
-            if int (uuid, 16) < 0: return False
-        elif len (uuid) == 36:
-            pieces = uuid.split ("-")
-            if len (pieces) != 5 or \
-                    len (pieces[0]) != 8 or \
-                    len (pieces[1]) != 4 or \
-                    len (pieces[2]) != 4 or \
-                    len (pieces[3]) != 4 or \
-                    len (pieces[4]) != 12:
-                return False
-            [ int (p, 16) for p in pieces ]
-        else:
-            return False
-    except ValueError: 
-        return False
-    except TypeError:
-        return False
-    return True
+    return isinstance (uuid, str) and _UUID_RE.fullmatch (uuid) is not None
 
 def to_full_uuid (uuid):
     """
@@ -274,13 +256,14 @@ def sdp_parse_size_desc (data):
     return dtype, dsize, dstart
 
 def sdp_parse_uuid (data, size):
-    if size == 2:
-        return binascii.hexlify (data)
-    elif size == 4:
-        return binascii.hexlify (data)
+    if size == 2 or size == 4:
+        return binascii.hexlify (data).decode ("ascii")
     elif size == 16:
+        # 8-4-4-4-12 hex digits; the final group (the node field) is
+        # unpacked as 4 + 8 hex digits
         return "%08X-%04X-%04X-%04X-%04X%08X" % struct.unpack ("!IHHHHI", data)
-    else: return ValueError ("invalid UUID size")
+    else:
+        raise ValueError ("invalid UUID size")
 
 def sdp_parse_int (data, size, signed):
     fmts = { 1 : "!b" , 2 : "!h" , 4 : "!i" , 8 : "!q" , 16 : "!qq" }
@@ -318,7 +301,7 @@ def sdp_parse_data_element (data):
     elif dtype == 3:
         rtype, rval = "UUID", sdp_parse_uuid (elem, dsize)
     elif dtype == 4:
-        rtype, rval = "String", elem
+        rtype, rval = "String", elem.decode ("utf-8", "replace")
     elif dtype == 5:
         rtype, rval = "Bool", (struct.unpack ("B", elem)[0] != 0)
     elif dtype == 6:
@@ -326,7 +309,7 @@ def sdp_parse_data_element (data):
     elif dtype == 7:
         rtype, rval = "AltElemSeq", sdp_parse_data_elementSequence (elem)
     elif dtype == 8:
-        rtype, rval = "URL", elem
+        rtype, rval = "URL", elem.decode ("utf-8", "replace")
 
     return rtype, rval, dstart+dsize
 
@@ -367,8 +350,8 @@ def sdp_make_data_element (type, value):
         return maketsd (tdesc, sdesc) + struct.pack (fmt, value)
     elif type == "UInt128":
         ts = maketsd (1, 4)
-        upper = ts >> 64
-        lower = (ts & 0xFFFFFFFFFFFFFFFF)
+        upper = value >> 64
+        lower = (value & 0xFFFFFFFFFFFFFFFF)
         return ts + struct.pack ("!QQ", upper, lower)
     elif type == "SInt128":
         ts = maketsd (2, 4)
@@ -382,9 +365,10 @@ def sdp_make_data_element (type, value):
         elif len (value) == 36:
             return maketsd (3, 4) + binascii.unhexlify (value.replace ("-",""))
     elif type == "String":
-        return maketsdl (4, len (value)) + str.encode(value)
+        encoded = value.encode ("utf-8")
+        return maketsdl (4, len (encoded)) + encoded
     elif type == "Bool":
-        return maketsd (5,0) + (value and "\x01" or "\x00")
+        return maketsd (5, 0) + (b"\x01" if value else b"\x00")
     elif type == "ElemSeq":
         packedseq = bytes()
         for subtype, subval in value:
@@ -397,7 +381,8 @@ def sdp_make_data_element (type, value):
             packedseq = packedseq + sdp_make_data_element (subtype, subval)
         return maketsdl (7, len (packedseq)) + packedseq
     elif type == "URL":
-        return maketsdl (8, len (value)) + value
+        encoded = value.encode ("utf-8")
+        return maketsdl (8, len (encoded)) + encoded
     else:
         raise ValueError ("invalid type %s" % type)
 

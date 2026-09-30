@@ -1,5 +1,5 @@
 1. update CHANGELOG
-2. bump version number in `setup.py` and in `__init__.py`
+2. bump version number in `pyproject.toml` and in `bluetooth/__init__.py`
 3. wait for GitHub CI workflow to complete
 4. download dist artifact
 5. delete linux wheels: `rm -f dist/*linux*.whl`

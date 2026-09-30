@@ -1,6 +1,7 @@
 include CHANGELOG
 include COPYING
-include README
+include README.md
+include pyproject.toml
 include setup.py
 
 recursive-include bluetooth *.py
@@ -8,10 +9,10 @@ recursive-include bluetooth *.py
 recursive-include bluez *.c
 recursive-include bluez *.h
 recursive-include msbt *.c
-recursive-include macos *.c
-recursive-include macos *.h
+recursive-include macos *.c *.h *.m *.pch *.plist *.pbxproj *.bridgesupport *.strings *.xcworkspacedata *.xcsettings
 
-recursive-include examples *.py
+recursive-include examples *.py *.glade *.gladep
+recursive-include tests *.py
 
 recursive-exclude * *.pyc
 recursive-exclude * *.o
