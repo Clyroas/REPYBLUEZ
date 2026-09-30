@@ -1223,7 +1223,7 @@ sock_recvfrom(PySocketSockObject *s, PyObject *args)
 
 	if (!getsockaddrlen(s, &addrlen))
 		return NULL;
-	buf = PyUnicode_FromStringAndSize((char *) 0, len);
+	buf = PyBytes_FromStringAndSize((char *) 0, len);
 	if (buf == NULL)
 		return NULL;
 

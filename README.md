@@ -29,9 +29,12 @@ Platform Support
 Python Version Support
 ----------------------
 
-| Python 2 | Python 3 (min 3.5) |
-|:--------:|:------------------:|
-| Till Version 0.22 | Version 0.23 and newer |
+| Python 3.10 | Python 3.11 | Python 3.12 | Python 3.13 | Python 3.14 |
+|:-----------:|:-----------:|:-----------:|:-----------:|:-----------:|
+| :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+
+Python 2 was last supported in version 0.22; Python 3.5 – 3.9 through the
+0.23 release.
 
 
 Examples

@@ -7,7 +7,35 @@ changes from 0.23 to 0.30 (unreleased)
 --------------------------------------
 
 Please refer to the commit log. Changes since the previous release are extensive
-and were not tracked in this file.
+and were not tracked in this file.  Notable updates:
+
+General:
+    - Modernized packaging: added pyproject.toml (PEP 517/621); setup.py now
+      only contains the platform-specific build logic
+    - __version__ is a proper string instead of a float
+    - Dropped support for end-of-life Python versions; the minimum is now
+      Python 3.10 and the code is tested up to Python 3.14
+    - GitHub Actions updated to current major versions; wheels are now also
+      built for Python 3.12, 3.13 and 3.14 (Linux wheels on manylinux_2_28)
+    - The sdist now contains the full macOS sources (Objective-C files and
+      Xcode project) so building from source works on macOS
+    - Added unit tests: python -m unittest discover tests
+
+GNU/Linux:
+    Bugs:
+        - discover_devices() ignored its flush_cache argument
+        - BluetoothSocket.recvfrom() used a text buffer where a bytes buffer
+          was required and could crash
+
+All platforms:
+    Bugs:
+        - is_valid_address() and is_valid_uuid() accepted strings that do not
+          match the documented formats (e.g. "0x12:34:..." or "0x11")
+        - advertise_service() used mutable default arguments
+        - sdp_make_data_element() raised TypeError for Bool, URL and UInt128
+          values and computed String lengths in characters instead of bytes
+        - sdp_parse_uuid() returned bytes instead of str and returned (rather
+          than raised) ValueError for invalid UUID sizes
 
 
 changes from 0.22 to 0.23 (December 27, 2019)

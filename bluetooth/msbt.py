@@ -142,8 +142,15 @@ class BluetoothSocket:
         raise Exception("Not yet implemented")
 
 
-def advertise_service (sock, name, service_id = "", service_classes = [], \
-        profiles = [], provider = "", description = "", protocols = []):
+def advertise_service (sock, name, service_id = "", service_classes = None, \
+        profiles = None, provider = "", description = "", protocols = None):
+    if service_classes is None:
+        service_classes = []
+    if profiles is None:
+        profiles = []
+    if protocols is None:
+        protocols = []
+
     if service_id != "" and not is_valid_uuid (service_id):
         raise ValueError ("invalid UUID specified for service_id")
     for uuid in service_classes:

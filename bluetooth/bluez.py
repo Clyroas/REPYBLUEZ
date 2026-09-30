@@ -20,7 +20,8 @@ def discover_devices (duration=8, flush_cache=True, lookup_names=False,
 
     sock = _gethcisock (device_id)
     try:
-        results = _bt.hci_inquiry (sock, duration=duration, flush_cache=True,
+        results = _bt.hci_inquiry (sock, duration=duration,
+                                   flush_cache=flush_cache,
                                    lookup_class=lookup_class, device_id=device_id,
                                    iac=iac)
     except _bt.error as e:
@@ -253,8 +254,15 @@ class BluetoothSocket:
     del _m, _s
 
 
-def advertise_service (sock, name, service_id = "", service_classes = [], \
-        profiles = [], provider = "", description = "", protocols = []):
+def advertise_service (sock, name, service_id = "", service_classes = None, \
+        profiles = None, provider = "", description = "", protocols = None):
+    if service_classes is None:
+        service_classes = []
+    if profiles is None:
+        profiles = []
+    if protocols is None:
+        protocols = []
+
     if service_id != "" and not is_valid_uuid (service_id):
         raise ValueError ("invalid UUID specified for service_id")
     for uuid in service_classes:
